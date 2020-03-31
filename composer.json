@@ -1,6 +1,7 @@
 {
   "name": "spacetab-io/jira-sdk-php",
   "description": "Asynchronous PHP Jira SDK.",
+  "license": "MIT",
   "authors": [
     {
       "name": "roquie",
