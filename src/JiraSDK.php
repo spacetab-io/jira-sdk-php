@@ -11,6 +11,8 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Spacetab\JiraSDK\API\Issue;
 use Spacetab\JiraSDK\API\IssueInterface;
+use Spacetab\JiraSDK\API\Search;
+use Spacetab\JiraSDK\API\SearchInterface;
 
 class JiraSDK implements LoggerAwareInterface
 {
@@ -67,5 +69,10 @@ class JiraSDK implements LoggerAwareInterface
     public function issues(): IssueInterface
     {
         return new Issue($this->httpClient, $this->httpRequest, $this->logger);
+    }
+
+    public function search(): SearchInterface
+    {
+        return new Search($this->httpClient, $this->httpRequest, $this->logger);
     }
 }
