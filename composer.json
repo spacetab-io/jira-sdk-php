@@ -1,0 +1,24 @@
+{
+  "name": "spacetab-io/jira-sdk-php",
+  "description": "Asynchronous PHP Jira SDK.",
+  "authors": [
+    {
+      "name": "roquie",
+      "email": "roquie0@gmail.com"
+    }
+  ],
+  "require": {
+    "ext-json": "*",
+    "amphp/http-client": "^4.2",
+    "psr/log": "^1.1"
+  },
+  "require-dev": {
+    "symfony/var-dumper": "^5.0",
+    "microparts/logs-php": "^1.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Spacetab\\JiraSDK\\": "src/"
+    }
+  }
+}
