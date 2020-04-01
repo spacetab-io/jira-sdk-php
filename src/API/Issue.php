@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Spacetab\JiraSDK\API;
 
 use Amp\Promise;
-use function Amp\call;
 
 class Issue extends HttpAPI implements IssueInterface
 {
@@ -16,15 +15,14 @@ class Issue extends HttpAPI implements IssueInterface
      */
     public function get(string $issueIdOrKey, array $params = []): Promise
     {
-        $this->logger->info("Issue: Get one issue: {$issueIdOrKey}", $params);
+        return $this->httpGet("/rest/api/2/issue/{$issueIdOrKey}");
+    }
 
-        return call(function () use ($issueIdOrKey) {
-            /** @var \Amp\Http\Client\Response $response */
-            $response = yield $this->httpClient->request(
-                $this->configuredRequest->makeRequest("/rest/api/2/issue/{$issueIdOrKey}")
-            );
-
-            return $this->handleResponse($response);
-        });
+    /**
+     * @inheritDoc
+     */
+    public function getWorklog(string $issueIdOrKey): Promise
+    {
+        return $this->httpGet("/rest/api/2/issue/{$issueIdOrKey}/worklog");
     }
 }

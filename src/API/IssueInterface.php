@@ -14,4 +14,10 @@ interface IssueInterface
      * @return \Amp\Promise
      */
     public function get(string $issueIdOrKey, array $params = []): Promise;
+
+    /**
+     * @param string $issueIdOrKey
+     * @return \Amp\Promise
+     */
+    public function getWorklog(string $issueIdOrKey): Promise;
 }

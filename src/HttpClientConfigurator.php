@@ -18,7 +18,7 @@ final class HttpClientConfigurator
     /**
      * Retry requests count.
      */
-    private const RETRY_REQUESTS   = 3;
+    private const RETRY_REQUESTS   = 5;
     private const FOLLOW_REDIRECTS = 10;
 
     /**

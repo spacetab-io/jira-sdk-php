@@ -46,13 +46,73 @@ abstract class HttpAPI
     }
 
     /**
-     * @param \Amp\Http\Client\Response $response
+     * Sends a GET HTTP Request with query parameters.
+     *
+     * @param string $path
+     * @param array $query
      * @return \Amp\Promise
      */
-    protected function handleResponse(Response $response): Promise
+    protected function httpGet(string $path, array $query = []): Promise
     {
-        return call(function () use ($response) {
-            $this->logger->info("HttpAPI: Received a response with status code: {$response->getStatus()}");
+        if (count($query) > 0) {
+            $path = sprintf('%s?%s', $path, http_build_query($query));
+        }
+
+        $this->logger->debug("Send GET request to {$path}", compact('query'));
+
+        return call(function () use ($path) {
+            /** @var \Amp\Http\Client\Response $response */
+            $response = yield $this->httpClient->request(
+                $this->configuredRequest->makeRequest($path)
+            );
+
+            return $this->handleResponse($response, $path);
+        });
+    }
+
+    /**
+     * Sends a GET HTTP Request with query parameters.
+     *
+     * @param string $path
+     * @param array $query
+     * @param array $body
+     * @return \Amp\Promise
+     */
+    protected function httpPost(string $path, array $query = [], array $body = []): Promise
+    {
+        $payload = null;
+
+        if (count($query) > 0) {
+            $path = sprintf('%s?%s', $path, http_build_query($query));
+        }
+
+        if (count($body) > 0) {
+            $payload = (string) json_encode($body);
+        }
+
+        $this->logger->debug("Send POST request to {$path}", compact('payload'));
+
+        return call(function () use ($path, $payload) {
+            /** @var \Amp\Http\Client\Response $response */
+            $response = yield $this->httpClient->request(
+                $this->configuredRequest->makeRequest($path, 'POST', $payload)
+            );
+
+            return $this->handleResponse($response, $path, $payload);
+        });
+    }
+
+    /**
+     * @param \Amp\Http\Client\Response $response
+     * @param string $path
+     * @param string $payload
+     * @return \Amp\Promise
+     */
+    protected function handleResponse(Response $response, string $path, string $payload = ''): Promise
+    {
+        return call(function () use ($response, $path, $payload) {
+            $message = "Received a response for {$path} with status code: {$response->getStatus()}";
+            $this->logger->debug($message, compact('payload'));
 
             $continue = false;
             switch (true) {
@@ -87,7 +147,7 @@ abstract class HttpAPI
             $data = $this->parseJson(yield $response->getBody()->buffer());
 
             if ($continue) {
-                $this->logger->info('HttpAPI: Response is correct, return a parsed server value...');
+                $this->logger->debug("Response for {$path} is correct, return a parsed server value...");
                 return $data;
             }
 
@@ -97,7 +157,7 @@ abstract class HttpAPI
                 }
             }
 
-            $this->logger->info('HttpAPI: Response incorrect, stops the request...');
+            $this->logger->info("Response for {$path} incorrect, stops the request...", compact('payload'));
 
             throw $exception;
         });
