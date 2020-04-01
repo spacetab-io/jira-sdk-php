@@ -6,7 +6,7 @@ namespace Spacetab\JiraSDK\API;
 
 use Amp\Iterator;
 
-interface SearchInterface extends JiraInterface
+interface SearchInterface
 {
     /**
      * @param string $jql
