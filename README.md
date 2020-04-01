@@ -34,6 +34,7 @@ Loop::run(function () {
 Jira REST API Docs: https://docs.atlassian.com/software/jira/docs/api/REST/8.5.4/
 
 * Get issue
+* Get worklog by issue
 * JQL Search
 
 ## License
