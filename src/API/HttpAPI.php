@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace Spacetab\JiraSDK\API;
 
+use Amp\Emitter;
 use Amp\Http\Client\HttpClient;
 use Amp\Http\Client\Response;
+use Amp\Iterator;
 use Amp\Promise;
 use JsonException;
 use Psr\Log\LoggerInterface;
 use Spacetab\JiraSDK\ConfiguredRequest;
 use Spacetab\JiraSDK\Exception\ResponseErrorException;
 use Spacetab\JiraSDK\Exception\UnknownErrorException;
+use function Amp\asyncCall;
 use function Amp\call;
 
 abstract class HttpAPI
 {
+    private const PAGINATE_CHUNK_SIZE = 5;
+
     /**
      * @var \Psr\Log\LoggerInterface
      */
@@ -43,6 +48,52 @@ abstract class HttpAPI
         $this->httpClient        = $httpClient;
         $this->configuredRequest = $configuredRequest;
         $this->logger            = $logger;
+    }
+
+    /**
+     * @param int $maxResults
+     * @param callable $callbackRequest
+     * @return \Amp\Iterator
+     */
+    protected function httpPaginate(int $maxResults, callable $callbackRequest): Iterator
+    {
+        $emitter  = new Emitter();
+        $iterator = $emitter->iterate();
+
+        asyncCall(function (Emitter $emitter) use ($maxResults, $callbackRequest) {
+            $this->logger->debug("Gets an paginated results; max: {$maxResults}; offset: 0");
+            $firstItem = yield $callbackRequest($maxResults, 0);
+
+            $emitter->emit($firstItem);
+
+            $totalCount = $firstItem['total'];
+            $page = $totalCount / $maxResults;
+
+            $this->logger->debug("Total records is {$totalCount}");
+
+            $promises = [];
+            for ($startAt = 1; $startAt < $page; $startAt++) {
+                $offset  = $startAt * $maxResults;
+                $message = "Continues gets an paginated results; max: {$maxResults}; offset: {$offset}";
+                $this->logger->debug($message);
+                $promises[] = $callbackRequest($maxResults, $offset);
+            }
+
+            $results = [];
+            foreach (array_chunk($promises, self::PAGINATE_CHUNK_SIZE) as $group) {
+                $results[] = yield $group;
+            }
+
+            foreach ($results as $result) {
+                foreach ($result as $item) {
+                    $emitter->emit($item);
+                }
+            }
+
+            $emitter->complete();
+        }, $emitter);
+
+        return $iterator;
     }
 
     /**
@@ -111,8 +162,7 @@ abstract class HttpAPI
     protected function handleResponse(Response $response, string $path, string $payload = ''): Promise
     {
         return call(function () use ($response, $path, $payload) {
-            $message = "Received a response for {$path} with status code: {$response->getStatus()}";
-            $this->logger->debug($message, compact('payload'));
+            $this->logger->debug("Received a response for {$path} with status code: {$response->getStatus()}");
 
             $continue = false;
             switch (true) {

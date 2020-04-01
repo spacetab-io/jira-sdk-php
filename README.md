@@ -11,13 +11,15 @@ composer require spacetab-io/jira-sdk-php
 
 ## Usage example
 
+### Simple methods which returns a promise
+
 ```php
 use Amp\Loop;
 use Spacetab\JiraSDK\JiraSDK;
 use Spacetab\JiraSDK\Exception\SdkErrorException;
 
 Loop::run(function () {
-    $jira = JiraSDK::new('https://jira.server.com', 'roquie', 'jiraTokenStringOrPassword');
+    $jira = JiraSDK::new('https://jira.server.com', 'username', 'jiraTokenStringOrPassword');
 
     try {
         $result = yield $jira->issues()->get('KEY-1');
@@ -29,13 +31,33 @@ Loop::run(function () {
 });
 ```
 
+### Methods with pagination which returns an iterator 
+
+```php
+use Amp\Loop;
+use Spacetab\JiraSDK\JiraSDK;
+
+Loop::run(function () {
+    $jira = JiraSDK::new('https://jira.server.com', 'username', 'jiraTokenStringOrPassword');
+
+    $iterator = $jira->search()->query('project = KEY', ['summary'], 20);
+
+    $results = [];
+    while (yield $iterator->advance()) {
+        $results[] = $iterator->getCurrent();
+    }
+    
+    dump($results);
+});
+```
+
 ## Supported methods
 
 Jira REST API Docs: https://docs.atlassian.com/software/jira/docs/api/REST/8.5.4/
 
 * Get issue
 * Get worklog by issue
-* JQL Search
+* JQL Search (with pagination support)
 
 ## License
 

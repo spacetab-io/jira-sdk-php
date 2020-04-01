@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Spacetab\JiraSDK\API;
 
-use Amp\Promise;
+use Amp\Iterator;
 
-interface SearchInterface
+interface SearchInterface extends JiraInterface
 {
     /**
      * @param string $jql
-     * @param array $params
-     * @return \Amp\Promise
+     * @param array $fields
+     * @param int $maxResults
+     *
+     * @return \Amp\Iterator
      */
-    public function query(string $jql, array $params = []): Promise;
+    public function query(string $jql, array $fields = [], int $maxResults = 100): Iterator;
 }

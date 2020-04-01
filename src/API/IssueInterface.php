@@ -6,7 +6,7 @@ namespace Spacetab\JiraSDK\API;
 
 use Amp\Promise;
 
-interface IssueInterface
+interface IssueInterface extends JiraInterface
 {
     /**
      * @param string $issueIdOrKey
