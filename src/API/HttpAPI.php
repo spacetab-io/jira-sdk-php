@@ -52,19 +52,22 @@ abstract class HttpAPI
 
     /**
      * @param int $maxResults
+     * @param string $valuesKey
      * @param callable $callbackRequest
      * @return \Amp\Iterator
      */
-    protected function httpPaginate(int $maxResults, callable $callbackRequest): Iterator
+    protected function httpPaginate(int $maxResults, string $valuesKey, callable $callbackRequest): Iterator
     {
         $emitter  = new Emitter();
         $iterator = $emitter->iterate();
 
-        asyncCall(function (Emitter $emitter) use ($maxResults, $callbackRequest) {
+        asyncCall(function (Emitter $emitter) use ($maxResults, $valuesKey, $callbackRequest) {
             $this->logger->debug("Gets an paginated results; max: {$maxResults}; offset: 0");
             $firstItem = yield $callbackRequest($maxResults, 0);
 
-            $emitter->emit($firstItem);
+            foreach ($firstItem[$valuesKey] as $item) {
+                $emitter->emit($item);
+            }
 
             $totalCount = $firstItem['total'];
             $page = $totalCount / $maxResults;
@@ -81,12 +84,12 @@ abstract class HttpAPI
 
             $results = [];
             foreach (array_chunk($promises, self::PAGINATE_CHUNK_SIZE) as $group) {
-                $results[] = yield $group;
+                $results += yield $group;
             }
 
-            foreach ($results as $result) {
-                foreach ($result as $item) {
-                    $emitter->emit($item);
+            foreach ($results as $item) {
+                foreach ($item[$valuesKey] as $one) {
+                    $emitter->emit($one);
                 }
             }
 
