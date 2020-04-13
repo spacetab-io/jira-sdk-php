@@ -1,5 +1,5 @@
 {
-  "name": "spacetab-io/jira-sdk-php",
+  "name": "spacetab-io/jira-sdk",
   "description": "Asynchronous PHP Jira SDK.",
   "license": "MIT",
   "authors": [
@@ -16,7 +16,7 @@
   },
   "require-dev": {
     "symfony/var-dumper": "^5.0",
-    "spacetab-io/logger-php": "^1.0"
+    "spacetab-io/logger": "^1.0"
   },
   "autoload": {
     "psr-4": {

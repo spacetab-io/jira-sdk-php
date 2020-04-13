@@ -6,7 +6,7 @@ Note: Until 1.0.0 version SDK is unstable and can be rewritten completely.
 ## Install
 
 ```bash
-composer require spacetab-io/jira-sdk-php
+composer require spacetab-io/jira-sdk
 ```
 
 ## Usage example
