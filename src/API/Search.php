@@ -12,8 +12,8 @@ use function Amp\asyncCall;
 class Search extends HttpAPI implements SearchInterface
 {
     private const VALUES_KEY = 'issues';
-    private const WORKLOG_CHUNK_SIZE = 7;
-    private const DELAY_AFTER_PAGINATION = 300;
+    private const WORKLOG_CHUNK_SIZE = 100;
+    private const DELAY_AFTER_PAGINATION = 150;
 
     /**
      * @inheritDoc

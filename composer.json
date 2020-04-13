@@ -12,7 +12,8 @@
     "php": ">=7.4",
     "ext-json": "*",
     "amphp/http-client": "^4.2",
-    "psr/log": "^1.1"
+    "psr/log": "^1.1",
+    "kelunik/retry": "^1.0"
   },
   "require-dev": {
     "symfony/var-dumper": "^5.0",

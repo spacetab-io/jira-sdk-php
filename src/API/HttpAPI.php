@@ -10,16 +10,20 @@ use Amp\Http\Client\Response;
 use Amp\Iterator;
 use Amp\Promise;
 use JsonException;
+use Kelunik\Retry\ConstantBackoff;
 use Psr\Log\LoggerInterface;
 use Spacetab\JiraSDK\ConfiguredRequest;
 use Spacetab\JiraSDK\Exception\ResponseErrorException;
 use Spacetab\JiraSDK\Exception\UnknownErrorException;
 use function Amp\asyncCall;
 use function Amp\call;
+use function Kelunik\Retry\retry;
 
 abstract class HttpAPI
 {
-    private const PAGINATE_CHUNK_SIZE = 5;
+    private const PAGINATE_CHUNK_SIZE    = 7;
+    private const REQUEST_RETRY_ATTEMPTS = 10;
+    private const REQUEST_RETRY_DELAY    = 500;
 
     /**
      * @var \Psr\Log\LoggerInterface
@@ -114,7 +118,7 @@ abstract class HttpAPI
 
         $this->logger->debug("Send GET request to {$path}", compact('query'));
 
-        return call(function () use ($path) {
+        return $this->retry(function () use ($path) {
             /** @var \Amp\Http\Client\Response $response */
             $response = yield $this->httpClient->request(
                 $this->configuredRequest->makeRequest($path)
@@ -146,7 +150,7 @@ abstract class HttpAPI
 
         $this->logger->debug("Send POST request to {$path}", compact('payload'));
 
-        return call(function () use ($path, $payload) {
+        return $this->retry(function () use ($path, $payload) {
             /** @var \Amp\Http\Client\Response $response */
             $response = yield $this->httpClient->request(
                 $this->configuredRequest->makeRequest($path, 'POST', $payload)
@@ -214,6 +218,15 @@ abstract class HttpAPI
 
             throw $exception;
         });
+    }
+
+    /**
+     * @param callable $callback
+     * @return \Amp\Promise
+     */
+    protected function retry(callable $callback): Promise
+    {
+        return retry(self::REQUEST_RETRY_ATTEMPTS, $callback, \Exception::class, new ConstantBackoff(self::REQUEST_RETRY_DELAY));
     }
 
     /**
