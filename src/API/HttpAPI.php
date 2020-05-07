@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Spacetab\JiraSDK\API;
 
-use Amp\Emitter;
 use Amp\Http\Client\HttpClient;
 use Amp\Http\Client\Response;
 use Amp\Iterator;
+use Amp\Producer;
 use Amp\Promise;
 use JsonException;
 use Kelunik\Retry\ConstantBackoff;
@@ -15,7 +15,6 @@ use Psr\Log\LoggerInterface;
 use Spacetab\JiraSDK\ConfiguredRequest;
 use Spacetab\JiraSDK\Exception\ResponseErrorException;
 use Spacetab\JiraSDK\Exception\UnknownErrorException;
-use function Amp\asyncCall;
 use function Amp\call;
 use function Kelunik\Retry\retry;
 
@@ -62,15 +61,12 @@ abstract class HttpAPI
      */
     protected function httpPaginate(int $maxResults, string $valuesKey, callable $callbackRequest): Iterator
     {
-        $emitter  = new Emitter();
-        $iterator = $emitter->iterate();
-
-        asyncCall(function (Emitter $emitter) use ($maxResults, $valuesKey, $callbackRequest) {
-            $this->logger->debug("Gets an paginated results; max: {$maxResults}; offset: 0");
+        return new Producer(function (callable $emit) use ($maxResults, $valuesKey, $callbackRequest): \Generator {
+            $this->logger->debug("Gets a paginated result; max: {$maxResults}; offset: 0");
             $firstItem = yield $callbackRequest($maxResults, 0);
 
             foreach ($firstItem[$valuesKey] as $item) {
-                $emitter->emit($item);
+                $emit($item);
             }
 
             $totalCount = $firstItem['total'];
@@ -81,7 +77,7 @@ abstract class HttpAPI
             $promises = [];
             for ($startAt = 1; $startAt < $page; $startAt++) {
                 $offset  = $startAt * $maxResults;
-                $message = "Continues gets an paginated results; max: {$maxResults}; offset: {$offset}";
+                $message = "Continues a get paginated results; max: {$maxResults}; offset: {$offset}";
                 $this->logger->debug($message);
                 $promises[] = $callbackRequest($maxResults, $offset);
             }
@@ -93,14 +89,10 @@ abstract class HttpAPI
 
             foreach ($results as $item) {
                 foreach ($item[$valuesKey] as $one) {
-                    $emitter->emit($one);
+                    $emit($one);
                 }
             }
-
-            $emitter->complete();
-        }, $emitter);
-
-        return $iterator;
+        });
     }
 
     /**

@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace Spacetab\JiraSDK\API;
 
 use Amp\Delayed;
-use Amp\Emitter;
 use Amp\Iterator;
-use function Amp\asyncCall;
+use Amp\Producer;
 
 class Search extends HttpAPI implements SearchInterface
 {
@@ -36,10 +35,7 @@ class Search extends HttpAPI implements SearchInterface
      */
     public function worklogs(string $jql, array $issueFields = []): Iterator
     {
-        $emitter  = new Emitter();
-        $iterator = $emitter->iterate();
-
-        asyncCall(function (Emitter $emitter) use ($jql, $issueFields) {
+        return new Producer(function (callable $emit) use ($jql, $issueFields) {
             $query = $this->query($jql, $issueFields);
 
             $issues = [];
@@ -59,7 +55,7 @@ class Search extends HttpAPI implements SearchInterface
                 }
 
                 foreach (yield $promises as $promiseIssue => $promiseItem) {
-                    $emitter->emit([
+                    $emit([
                         'issue' => $tasks[$promiseIssue],
                         'worklogs' => $promiseItem['worklogs'],
                     ]);
@@ -68,10 +64,6 @@ class Search extends HttpAPI implements SearchInterface
                 $tasks = [];
                 $promises = [];
             }
-
-            $emitter->complete();
-        }, $emitter);
-
-        return $iterator;
+        });
     }
 }

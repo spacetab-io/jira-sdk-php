@@ -89,7 +89,7 @@ final class HttpClientConfigurator
      */
     public function setEndpoint(string $endpoint): self
     {
-        $this->endpoint = $endpoint;
+        $this->endpoint = rtrim($endpoint, '/');
 
         return $this;
     }

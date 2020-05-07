@@ -5,14 +5,10 @@ declare(strict_types=1);
 namespace Spacetab\JiraSDK;
 
 use Amp\Http\Client\Request;
-use League\Uri\Uri;
 
 class ConfiguredRequest
 {
-    /**
-     * @var \Psr\Http\Message\UriInterface|Uri
-     */
-    private $baseUri = null;
+    private string $baseUri;
 
     /**
      * ConfiguredRequest constructor.
@@ -21,7 +17,7 @@ class ConfiguredRequest
      */
     public function __construct(string $baseUri)
     {
-        $this->baseUri = Uri::createFromString($baseUri);
+        $this->baseUri = $baseUri;
     }
 
     /**
@@ -30,16 +26,8 @@ class ConfiguredRequest
      * @param string|null $body
      * @return \Amp\Http\Client\Request
      */
-    public function makeRequest($uri, string $method = 'GET', ?string $body = null)
+    public function makeRequest(string $uri, string $method = 'GET', ?string $body = null)
     {
-        if (is_string($uri)) {
-            $uri = Uri::createFromString($uri);
-        }
-
-        $total = $this->baseUri
-            ->withPath($uri->getPath())
-            ->withQuery($uri->getQuery());
-
-        return new Request($total, $method, $body);
+        return new Request($this->baseUri . $uri, $method, $body);
     }
 }
