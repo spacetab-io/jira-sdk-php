@@ -10,8 +10,8 @@ use Amp\Producer;
 
 class Search extends HttpAPI implements SearchInterface
 {
-    private const VALUES_KEY = 'issues';
-    private const WORKLOG_CHUNK_SIZE = 100;
+    private const VALUES_KEY             = 'issues';
+    private const ISSUE_CHUNK_SIZE       = 100;
     private const DELAY_AFTER_PAGINATION = 150;
 
     /**
@@ -26,6 +26,41 @@ class Search extends HttpAPI implements SearchInterface
                 'maxResults' => $next,
                 'fields' => $fields,
             ]);
+        });
+    }
+
+    /** @inheritDoc */
+    public function issues(string $jql, array $issueFields = []): Iterator
+    {
+        return new Producer(function (callable $emit) use ($jql, $issueFields) {
+            $query = $this->query($jql, $issueFields);
+
+            $issues = [];
+            while (yield $query->advance()) {
+                $issues[] = $query->getCurrent();
+            }
+
+            new Delayed(self::DELAY_AFTER_PAGINATION);
+
+            $tasks = [];
+            $promises = [];
+
+            foreach (array_chunk($issues, self::ISSUE_CHUNK_SIZE) as $chunk) {
+                foreach ($chunk as $issue) {
+                    $tasks[$issue['key']] = $issue;
+                    $promises[$issue['key']] = $this->httpGet("/rest/api/2/issue/{$issue['key']}");
+                }
+
+                foreach (yield $promises as $promiseIssue => $promiseItem) {
+                    $emit([
+                        'issue' => $tasks[$promiseIssue],
+                        'worklogs' => $promiseItem['worklogs'],
+                    ]);
+                }
+
+                $tasks = [];
+                $promises = [];
+            }
         });
     }
 
@@ -48,7 +83,7 @@ class Search extends HttpAPI implements SearchInterface
             $tasks = [];
             $promises = [];
 
-            foreach (array_chunk($issues, self::WORKLOG_CHUNK_SIZE) as $chunk) {
+            foreach (array_chunk($issues, self::ISSUE_CHUNK_SIZE) as $chunk) {
                 foreach ($chunk as $issue) {
                     $tasks[$issue['key']] = $issue;
                     $promises[$issue['key']] = $this->httpGet("/rest/api/2/issue/{$issue['key']}/worklog");

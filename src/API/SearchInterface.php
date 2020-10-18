@@ -22,5 +22,12 @@ interface SearchInterface
      * @param array $issueFields
      * @return \Amp\Iterator
      */
+    public function issues(string $jql, array $issueFields = []): Iterator;
+
+    /**
+     * @param string $jql
+     * @param array $issueFields
+     * @return \Amp\Iterator
+     */
     public function worklogs(string $jql, array $issueFields = []): Iterator;
 }
