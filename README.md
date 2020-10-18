@@ -53,7 +53,8 @@ Loop::run(function () {
 
 ## Supported methods
 
-Jira REST API Docs: https://docs.atlassian.com/software/jira/docs/api/REST/8.5.4/
+Jira REST API Docs: https://docs.atlassian.com/software/jira/docs/api/REST/8.5.4/ 
+and https://docs.atlassian.com/jira-software/REST/7.0.4
 
 * Get issue
 * Get worklog by issue
@@ -61,6 +62,9 @@ Jira REST API Docs: https://docs.atlassian.com/software/jira/docs/api/REST/8.5.4
 * Load worklogs by JQL request
 * Get all projects
 * Get one project
+* Get all boards (agile)
+* Get one board (agile)
+* Get board sprints (agile)
 
 ## License
 

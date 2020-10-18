@@ -9,6 +9,8 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Spacetab\JiraSDK\API\Board;
+use Spacetab\JiraSDK\API\BoardInterface;
 use Spacetab\JiraSDK\API\Issue;
 use Spacetab\JiraSDK\API\IssueInterface;
 use Spacetab\JiraSDK\API\Project;
@@ -81,5 +83,10 @@ class JiraSDK implements LoggerAwareInterface
     public function project(): ProjectInterface
     {
         return new Project($this->httpClient, $this->httpRequest, $this->logger);
+    }
+
+    public function board(): BoardInterface
+    {
+        return new Board($this->httpClient, $this->httpRequest, $this->logger);
     }
 }

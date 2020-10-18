@@ -69,7 +69,10 @@ abstract class HttpAPI
                 $emit($item);
             }
 
-            $totalCount = $firstItem['total'];
+            // WORKAROUND
+            // Jira Agile API does not have `total` key in response but should.
+            // If it not exists I count all items in the response and then emulate it.
+            $totalCount = $firstItem['total'] ?? count($firstItem[$valuesKey]);
             $page = $totalCount / $maxResults;
 
             $this->logger->debug("Total records is {$totalCount}");
