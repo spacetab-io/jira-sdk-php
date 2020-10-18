@@ -59,6 +59,8 @@ Jira REST API Docs: https://docs.atlassian.com/software/jira/docs/api/REST/8.5.4
 * Get worklog by issue
 * JQL Search (with pagination support)
 * Load worklogs by JQL request
+* Get all projects
+* Get one project
 
 ## License
 

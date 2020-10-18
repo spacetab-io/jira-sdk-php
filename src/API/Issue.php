@@ -15,7 +15,7 @@ class Issue extends HttpAPI implements IssueInterface
      */
     public function get(string $issueIdOrKey, array $params = []): Promise
     {
-        return $this->httpGet("/rest/api/2/issue/{$issueIdOrKey}");
+        return $this->httpGet("/rest/api/2/issue/{$issueIdOrKey}", $params);
     }
 
     /**
