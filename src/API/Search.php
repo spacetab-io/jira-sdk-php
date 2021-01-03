@@ -14,9 +14,6 @@ class Search extends HttpAPI implements SearchInterface
     private const WORKLOG_CHUNK_SIZE = 100;
     private const DELAY_AFTER_PAGINATION = 150;
 
-    /**
-     * @inheritDoc
-     */
     public function query(string $jql, array $fields = [], int $maxResults = 100): Iterator
     {
         return $this->httpPaginate($maxResults, self::VALUES_KEY, function($next, $offset) use ($jql, $fields) {
@@ -29,10 +26,6 @@ class Search extends HttpAPI implements SearchInterface
         });
     }
 
-    /**
-     * @inheritDoc
-     * @throws \Throwable
-     */
     public function worklogs(string $jql, array $issueFields = []): Iterator
     {
         return new Producer(function (callable $emit) use ($jql, $issueFields) {

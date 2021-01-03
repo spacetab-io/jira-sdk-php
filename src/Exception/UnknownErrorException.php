@@ -6,7 +6,7 @@ namespace Spacetab\JiraSDK\Exception;
 
 class UnknownErrorException extends SdkErrorException
 {
-    public static function unknownError()
+    public static function unknownError(): self
     {
         return new self('Unknown error occurred.');
     }

@@ -8,42 +8,42 @@ use JsonException;
 
 class ResponseErrorException extends SdkErrorException
 {
-    public static function invalidBodyFormat(JsonException $e)
+    public static function invalidBodyFormat(JsonException $e): self
     {
         return new self("Invalid response format: {$e->getMessage()}", 0, $e);
     }
 
-    public static function badRequest()
+    public static function badRequest(): self
     {
         return new self('Bad request.');
     }
 
-    public static function unauthorized()
+    public static function unauthorized(): self
     {
         return new self('Unauthorized. Wrong credentials?');
     }
 
-    public static function requestFailed()
+    public static function requestFailed(): self
     {
         return new self('Request failed.');
     }
 
-    public static function forbidden()
+    public static function forbidden(): self
     {
         return new self('Forbidden.');
     }
 
-    public static function notFound()
+    public static function notFound(): self
     {
         return new self('Not found.');
     }
 
-    public static function payloadTooLarge()
+    public static function payloadTooLarge(): self
     {
         return new self('Payload too large.');
     }
 
-    public static function serverError()
+    public static function serverError(): self
     {
         return new self('Server error.');
     }

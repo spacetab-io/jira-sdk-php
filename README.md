@@ -65,12 +65,13 @@ and https://docs.atlassian.com/jira-software/REST/7.0.4
 * Get all boards (agile)
 * Get one board (agile)
 * Get board sprints (agile)
+* Get one sprint (agile)
 
 ## License
 
 The MIT License
 
-Copyright © 2020 spacetab.io, Inc. https://spacetab.io
+Copyright © 2021 spacetab.io, Inc. https://spacetab.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

@@ -21,12 +21,12 @@ class ConfiguredRequest
     }
 
     /**
-     * @param \Psr\Http\Message\UriInterface|string $uri
+     * @param string $uri
      * @param string $method
      * @param string|null $body
-     * @return \Amp\Http\Client\Request
+     * @return Request
      */
-    public function makeRequest(string $uri, string $method = 'GET', ?string $body = null)
+    public function makeRequest(string $uri, string $method = 'GET', ?string $body = null): Request
     {
         return new Request($this->baseUri . $uri, $method, $body);
     }

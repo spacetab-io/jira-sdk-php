@@ -9,6 +9,8 @@ use Amp\Http\Client\Response;
 use Amp\Iterator;
 use Amp\Producer;
 use Amp\Promise;
+use Exception;
+use Generator;
 use JsonException;
 use Kelunik\Retry\ConstantBackoff;
 use Psr\Log\LoggerInterface;
@@ -24,27 +26,16 @@ abstract class HttpAPI
     private const REQUEST_RETRY_ATTEMPTS = 10;
     private const REQUEST_RETRY_DELAY    = 500;
 
-    /**
-     * @var \Psr\Log\LoggerInterface
-     */
     protected LoggerInterface $logger;
-
-    /**
-     * @var \Amp\Http\Client\HttpClient
-     */
     protected HttpClient $httpClient;
-
-    /**
-     * @var \Spacetab\JiraSDK\ConfiguredRequest
-     */
     protected ConfiguredRequest $configuredRequest;
 
     /**
-     * Issue constructor.
+     * HttpAPI constructor.
      *
-     * @param \Amp\Http\Client\HttpClient $httpClient
-     * @param \Spacetab\JiraSDK\ConfiguredRequest $configuredRequest
-     * @param \Psr\Log\LoggerInterface $logger
+     * @param HttpClient $httpClient
+     * @param ConfiguredRequest $configuredRequest
+     * @param LoggerInterface $logger
      */
     public function __construct(HttpClient $httpClient, ConfiguredRequest $configuredRequest, LoggerInterface $logger)
     {
@@ -53,15 +44,9 @@ abstract class HttpAPI
         $this->logger            = $logger;
     }
 
-    /**
-     * @param int $maxResults
-     * @param string $valuesKey
-     * @param callable $callbackRequest
-     * @return \Amp\Iterator
-     */
     protected function httpPaginate(int $maxResults, string $valuesKey, callable $callbackRequest): Iterator
     {
-        return new Producer(function (callable $emit) use ($maxResults, $valuesKey, $callbackRequest): \Generator {
+        return new Producer(function (callable $emit) use ($maxResults, $valuesKey, $callbackRequest): Generator {
             $this->logger->debug("Gets a paginated result; max: {$maxResults}; offset: 0");
             $firstItem = yield $callbackRequest($maxResults, 0);
 
@@ -103,7 +88,7 @@ abstract class HttpAPI
      *
      * @param string $path
      * @param array $query
-     * @return \Amp\Promise
+     * @return Promise
      */
     protected function httpGet(string $path, array $query = []): Promise
     {
@@ -114,7 +99,7 @@ abstract class HttpAPI
         $this->logger->debug("Send GET request to {$path}", compact('query'));
 
         return $this->retry(function () use ($path) {
-            /** @var \Amp\Http\Client\Response $response */
+            /** @var Response $response */
             $response = yield $this->httpClient->request(
                 $this->configuredRequest->makeRequest($path)
             );
@@ -129,7 +114,7 @@ abstract class HttpAPI
      * @param string $path
      * @param array $query
      * @param array $body
-     * @return \Amp\Promise
+     * @return Promise
      */
     protected function httpPost(string $path, array $query = [], array $body = []): Promise
     {
@@ -146,7 +131,7 @@ abstract class HttpAPI
         $this->logger->debug("Send POST request to {$path}", compact('payload'));
 
         return $this->retry(function () use ($path, $payload) {
-            /** @var \Amp\Http\Client\Response $response */
+            /** @var Response $response */
             $response = yield $this->httpClient->request(
                 $this->configuredRequest->makeRequest($path, 'POST', $payload)
             );
@@ -156,10 +141,12 @@ abstract class HttpAPI
     }
 
     /**
-     * @param \Amp\Http\Client\Response $response
+     * Handle the response.
+     *
+     * @param Response $response
      * @param string $path
      * @param string $payload
-     * @return \Amp\Promise
+     * @return Promise
      */
     protected function handleResponse(Response $response, string $path, string $payload = ''): Promise
     {
@@ -205,29 +192,29 @@ abstract class HttpAPI
 
             if (isset($data['errorMessages']) && count($data['errorMessages']) > 0) {
                 foreach ($data['errorMessages'] as $message) {
+                    // @phpstan-ignore-next-line
                     $exception->setErrorMessage($message);
                 }
             }
 
             $this->logger->info("Response for {$path} incorrect, stops the request...", compact('payload'));
 
+            // @phpstan-ignore-next-line
             throw $exception;
         });
     }
 
-    /**
-     * @param callable $callback
-     * @return \Amp\Promise
-     */
     protected function retry(callable $callback): Promise
     {
-        return retry(self::REQUEST_RETRY_ATTEMPTS, $callback, \Exception::class, new ConstantBackoff(self::REQUEST_RETRY_DELAY));
+        return retry(self::REQUEST_RETRY_ATTEMPTS, $callback, Exception::class, new ConstantBackoff(self::REQUEST_RETRY_DELAY));
     }
 
     /**
-     * @param $body
+     * Parses JSON and catch error if Jira responses HTML.
+     *
+     * @param mixed $body
      * @return array
-     * @throws \Spacetab\JiraSDK\Exception\ResponseErrorException
+     * @throws ResponseErrorException
      */
     protected function parseJson($body): array
     {

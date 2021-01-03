@@ -13,17 +13,11 @@ class SdkErrorException extends Exception
      */
     private array $errorMessages = [];
 
-    /**
-     * @param string $message
-     */
-    public function setErrorMessage(string $message)
+    public function setErrorMessage(string $message): void
     {
         $this->errorMessages[] = $message;
     }
 
-    /**
-     * @return array
-     */
     public function getErrorMessages(): array
     {
         return $this->errorMessages;

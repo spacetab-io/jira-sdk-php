@@ -34,12 +34,6 @@ class Board extends HttpAPI implements BoardInterface
         return $this->httpGet(sprintf('/rest/agile/1.0/board/%d', $boardId), $params);
     }
 
-    /**
-     * @param int $boardId
-     * @param array|string[] $state
-     * @param int $maxResults
-     * @return \Amp\Iterator
-     */
     public function getBoardSprints(int $boardId, array $state = ['active'], int $maxResults = 100): Iterator
     {
         return $this->httpPaginate($maxResults, 'values', function($next, $offset) use ($boardId, $state) {

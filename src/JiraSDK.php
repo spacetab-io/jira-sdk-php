@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace Spacetab\JiraSDK;
 
-use Amp\Http\Client\HttpClient;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Spacetab\JiraSDK\API\Board;
 use Spacetab\JiraSDK\API\BoardInterface;
-use Spacetab\JiraSDK\API\Issue;
 use Spacetab\JiraSDK\API\IssueInterface;
-use Spacetab\JiraSDK\API\Project;
 use Spacetab\JiraSDK\API\ProjectInterface;
-use Spacetab\JiraSDK\API\Search;
 use Spacetab\JiraSDK\API\SearchInterface;
+use Spacetab\JiraSDK\API\SprintInterface;
 
 class JiraSDK implements LoggerAwareInterface
 {
@@ -24,42 +20,25 @@ class JiraSDK implements LoggerAwareInterface
 
     public const VERSION = '1.0.0b';
 
-    /**
-     * @var \Spacetab\JiraSDK\HttpClientConfigurator
-     */
     private HttpClientConfigurator $clientConfigurator;
-
-    /**
-     * @var \Amp\Http\Client\HttpClient
-     */
-    private HttpClient $httpClient;
-
-    /**
-     * @var \Spacetab\JiraSDK\ConfiguredRequest
-     */
-    private ConfiguredRequest $httpRequest;
+    private HandlerFactory $handlerFactory;
 
     /**
      * JiraSDK constructor.
      *
-     * @param \Spacetab\JiraSDK\HttpClientConfigurator $clientConfigurator
-     * @param \Psr\Log\LoggerInterface|null $logger
+     * @param HttpClientConfigurator $clientConfigurator
+     * @param LoggerInterface|null $logger
      */
     public function __construct(HttpClientConfigurator $clientConfigurator, ?LoggerInterface $logger = null)
     {
         $this->clientConfigurator = $clientConfigurator;
-        $this->httpClient         = $clientConfigurator->createConfiguredHttpClient();
-        $this->httpRequest        = $clientConfigurator->createConfiguredHttpRequest();
-        $this->logger             = $logger ?: new NullLogger();
+        $this->handlerFactory     = new HandlerFactory(
+            $clientConfigurator->createConfiguredHttpClient(),
+            $clientConfigurator->createConfiguredHttpRequest(),
+            $logger ?: new NullLogger()
+        );
     }
 
-    /**
-     * @param string $endpoint
-     * @param string $basicUsername
-     * @param string $basicPassword
-     *
-     * @return static
-     */
     public static function new(string $endpoint, string $basicUsername, string $basicPassword): self
     {
         $configurator = (new HttpClientConfigurator())
@@ -70,23 +49,38 @@ class JiraSDK implements LoggerAwareInterface
         return new JiraSDK($configurator);
     }
 
+    /**
+     * @deprecated
+     * @return IssueInterface
+     * @throws Exception\SdkErrorException
+     */
     public function issues(): IssueInterface
     {
-        return new Issue($this->httpClient, $this->httpRequest, $this->logger);
+        return $this->handlerFactory->create(__FUNCTION__);
+    }
+
+    public function issue(): IssueInterface
+    {
+        return $this->handlerFactory->create(__FUNCTION__);
     }
 
     public function search(): SearchInterface
     {
-        return new Search($this->httpClient, $this->httpRequest, $this->logger);
+        return $this->handlerFactory->create(__FUNCTION__);
     }
 
     public function project(): ProjectInterface
     {
-        return new Project($this->httpClient, $this->httpRequest, $this->logger);
+        return $this->handlerFactory->create(__FUNCTION__);
     }
 
     public function board(): BoardInterface
     {
-        return new Board($this->httpClient, $this->httpRequest, $this->logger);
+        return $this->handlerFactory->create(__FUNCTION__);
+    }
+
+    public function sprint(): SprintInterface
+    {
+        return $this->handlerFactory->create(__FUNCTION__);
     }
 }

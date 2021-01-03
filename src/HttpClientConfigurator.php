@@ -21,24 +21,9 @@ final class HttpClientConfigurator
     private const RETRY_REQUESTS   = 5;
     private const FOLLOW_REDIRECTS = 10;
 
-    /**
-     * @var string
-     */
     private string $basicAuthUsername;
-
-    /**
-     * @var string
-     */
     private string $basicAuthPassword;
-
-    /**
-     * @var string
-     */
     private string $endpoint;
-
-    /**
-     * @var \Amp\Http\Client\Connection\UnlimitedConnectionPool
-     */
     private UnlimitedConnectionPool $pool;
 
     /**
@@ -50,11 +35,10 @@ final class HttpClientConfigurator
     }
 
     /**
-     * @return \Amp\Http\Client\HttpClient
+     * @return HttpClient
      */
     public function createConfiguredHttpClient(): HttpClient
     {
-        /** @var PooledHttpClient $client */
         $client = new PooledHttpClient($this->pool);
 
         $interceptors = [
@@ -75,18 +59,11 @@ final class HttpClientConfigurator
         return new HttpClient($client);
     }
 
-    /**
-     * @return \Spacetab\JiraSDK\ConfiguredRequest
-     */
     public function createConfiguredHttpRequest(): ConfiguredRequest
     {
         return (new ConfiguredRequest($this->endpoint));
     }
 
-    /**
-     * @param string $endpoint
-     * @return \Spacetab\JiraSDK\HttpClientConfigurator
-     */
     public function setEndpoint(string $endpoint): self
     {
         $this->endpoint = rtrim($endpoint, '/');
@@ -94,10 +71,6 @@ final class HttpClientConfigurator
         return $this;
     }
 
-    /**
-     * @param string $username
-     * @return $this
-     */
     public function setBasicUsername(string $username): self
     {
         $this->basicAuthUsername = $username;
@@ -105,10 +78,6 @@ final class HttpClientConfigurator
         return $this;
     }
 
-    /**
-     * @param string $password
-     * @return \Spacetab\JiraSDK\HttpClientConfigurator
-     */
     public function setBasicPassword(string $password): self
     {
         $this->basicAuthPassword = $password;
@@ -116,9 +85,6 @@ final class HttpClientConfigurator
         return $this;
     }
 
-    /**
-     * @return string
-     */
     private function getAuthorizationHeaderValue(): string
     {
         return 'Basic ' . base64_encode("$this->basicAuthUsername:$this->basicAuthPassword");
