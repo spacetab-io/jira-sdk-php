@@ -2,52 +2,43 @@
 
 declare(strict_types=1);
 
-namespace Spacetab\JiraSDK\API;
+namespace Spacetab\SDK\Jira\Resource;
 
-use Amp\Http\Client\HttpClient;
 use Amp\Http\Client\Response;
 use Amp\Iterator;
+use Amp\NullCancellationToken;
 use Amp\Producer;
 use Amp\Promise;
-use Exception;
 use Generator;
 use JsonException;
 use Kelunik\Retry\ConstantBackoff;
-use Psr\Log\LoggerInterface;
-use Spacetab\JiraSDK\ConfiguredRequest;
-use Spacetab\JiraSDK\Exception\ResponseErrorException;
-use Spacetab\JiraSDK\Exception\UnknownErrorException;
+use Spacetab\SDK\Jira\Configurator;
+use Spacetab\SDK\Jira\Exception;
 use function Amp\call;
 use function Kelunik\Retry\retry;
 
-abstract class HttpAPI
+abstract class Resource
 {
     private const PAGINATE_CHUNK_SIZE    = 7;
     private const REQUEST_RETRY_ATTEMPTS = 10;
     private const REQUEST_RETRY_DELAY    = 500;
 
-    protected LoggerInterface $logger;
-    protected HttpClient $httpClient;
-    protected ConfiguredRequest $configuredRequest;
+    private Configurator $configurator;
 
     /**
-     * HttpAPI constructor.
+     * Resource constructor.
      *
-     * @param HttpClient $httpClient
-     * @param ConfiguredRequest $configuredRequest
-     * @param LoggerInterface $logger
+     * @param Configurator $configurator
      */
-    public function __construct(HttpClient $httpClient, ConfiguredRequest $configuredRequest, LoggerInterface $logger)
+    public function __construct(Configurator $configurator)
     {
-        $this->httpClient        = $httpClient;
-        $this->configuredRequest = $configuredRequest;
-        $this->logger            = $logger;
+        $this->configurator = $configurator;
     }
 
     protected function httpPaginate(int $maxResults, string $valuesKey, callable $callbackRequest): Iterator
     {
         return new Producer(function (callable $emit) use ($maxResults, $valuesKey, $callbackRequest): Generator {
-            $this->logger->debug("Gets a paginated result; max: {$maxResults}; offset: 0");
+            $this->configurator->getLogger()->debug("Gets a paginated result; max: {$maxResults}; offset: 0");
             $firstItem = yield $callbackRequest($maxResults, 0);
 
             foreach ($firstItem[$valuesKey] as $item) {
@@ -60,13 +51,13 @@ abstract class HttpAPI
             $totalCount = $firstItem['total'] ?? count($firstItem[$valuesKey]);
             $page = $totalCount / $maxResults;
 
-            $this->logger->debug("Total records is {$totalCount}");
+            $this->configurator->getLogger()->debug("Total records is {$totalCount}");
 
             $promises = [];
             for ($startAt = 1; $startAt < $page; $startAt++) {
                 $offset  = $startAt * $maxResults;
                 $message = "Continues a get paginated results; max: {$maxResults}; offset: {$offset}";
-                $this->logger->debug($message);
+                $this->configurator->getLogger()->debug($message);
                 $promises[] = $callbackRequest($maxResults, $offset);
             }
 
@@ -84,7 +75,7 @@ abstract class HttpAPI
     }
 
     /**
-     * Sends a GET HTTP Request with query parameters.
+     * Sends a GET HTTP MakeRequest with query parameters.
      *
      * @param string $path
      * @param array $query
@@ -96,20 +87,25 @@ abstract class HttpAPI
             $path = sprintf('%s?%s', $path, http_build_query($query));
         }
 
-        $this->logger->debug("Send GET request to {$path}", compact('query'));
+        $this->configurator->getLogger()->debug("Send GET request to {$path}", compact('query'));
 
         return $this->retry(function () use ($path) {
-            /** @var Response $response */
-            $response = yield $this->httpClient->request(
-                $this->configuredRequest->makeRequest($path)
-            );
+            $request = $this->configurator->getRequest()
+                ->makeRequest($path);
 
-            return $this->handleResponse($response, $path);
+            return $this->configurator->getCache()
+                ->memorize($request, fn() => call(function () use ($request, $path) {
+                    /** @var Response $response */
+                    $response = yield $this->configurator->getHttpClient()
+                        ->request($request, new NullCancellationToken());
+
+                    return $this->handleResponse($response, $path);
+                }));
         });
     }
 
     /**
-     * Sends a GET HTTP Request with query parameters.
+     * Sends a GET HTTP MakeRequest with query parameters.
      *
      * @param string $path
      * @param array $query
@@ -128,15 +124,20 @@ abstract class HttpAPI
             $payload = (string) json_encode($body);
         }
 
-        $this->logger->debug("Send POST request to {$path}", compact('payload'));
+        $this->configurator->getLogger()->debug("Send POST request to {$path}", compact('payload'));
 
         return $this->retry(function () use ($path, $payload) {
-            /** @var Response $response */
-            $response = yield $this->httpClient->request(
-                $this->configuredRequest->makeRequest($path, 'POST', $payload)
-            );
+            $request = $this->configurator->getRequest()
+                ->makeRequest($path, 'POST', $payload);
 
-            return $this->handleResponse($response, $path, $payload);
+            return $this->configurator->getCache()
+                ->memorize($request, fn() => call(function () use ($request, $path, $payload) {
+                    /** @var Response $response */
+                    $response = yield $this->configurator->getHttpClient()
+                        ->request($request, new NullCancellationToken());
+
+                    return $this->handleResponse($response, $path, $payload);
+                }));
         });
     }
 
@@ -151,7 +152,8 @@ abstract class HttpAPI
     protected function handleResponse(Response $response, string $path, string $payload = ''): Promise
     {
         return call(function () use ($response, $path, $payload) {
-            $this->logger->debug("Received a response for {$path} with status code: {$response->getStatus()}");
+            $this->configurator->getLogger()
+                ->debug("Received a response for {$path} with status code: {$response->getStatus()}");
 
             $continue = false;
             switch (true) {
@@ -159,34 +161,36 @@ abstract class HttpAPI
                     $continue = true;
                     break;
                 case $response->getStatus() === 400:
-                    $exception = ResponseErrorException::badRequest();
+                    $exception = Exception\Response::badRequest();
                     break;
                 case $response->getStatus() === 401:
-                    $exception = ResponseErrorException::unauthorized();
+                    $exception = Exception\Response::unauthorized();
                     break;
                 case $response->getStatus() === 402:
-                    $exception = ResponseErrorException::requestFailed();
+                    $exception = Exception\Response::requestFailed();
                     break;
                 case $response->getStatus() === 403:
-                    $exception = ResponseErrorException::forbidden();
+                    $exception = Exception\Response::forbidden();
                     break;
                 case $response->getStatus() === 404:
-                    $exception = ResponseErrorException::notFound();
+                    $exception = Exception\Response::notFound();
                     break;
                 case $response->getStatus() === 413:
-                    $exception = ResponseErrorException::payloadTooLarge();
+                    $exception = Exception\Response::payloadTooLarge();
                     break;
                 case $response->getStatus() >= 500 && $response->getStatus() <= 599:
-                    $exception = ResponseErrorException::serverError();
+                    $exception = Exception\Response::serverError();
                     break;
                 default:
-                    $exception = UnknownErrorException::unknownError();
+                    $exception = Exception\Response::unknownError();
             }
 
             $data = $this->parseJson(yield $response->getBody()->buffer());
 
             if ($continue) {
-                $this->logger->debug("Response for {$path} is correct, return a parsed server value...");
+                $this->configurator->getLogger()
+                    ->debug("Response for {$path} is correct, return a parsed server value...");
+
                 return $data;
             }
 
@@ -197,7 +201,8 @@ abstract class HttpAPI
                 }
             }
 
-            $this->logger->info("Response for {$path} incorrect, stops the request...", compact('payload'));
+            $this->configurator->getLogger()
+                ->info("Response for {$path} incorrect, stops the request...", compact('payload'));
 
             // @phpstan-ignore-next-line
             throw $exception;
@@ -206,7 +211,7 @@ abstract class HttpAPI
 
     protected function retry(callable $callback): Promise
     {
-        return retry(self::REQUEST_RETRY_ATTEMPTS, $callback, Exception::class, new ConstantBackoff(self::REQUEST_RETRY_DELAY));
+        return retry(self::REQUEST_RETRY_ATTEMPTS, $callback, \Exception::class, new ConstantBackoff(self::REQUEST_RETRY_DELAY));
     }
 
     /**
@@ -214,7 +219,7 @@ abstract class HttpAPI
      *
      * @param mixed $body
      * @return array
-     * @throws ResponseErrorException
+     * @throws Exception\Response
      */
     protected function parseJson($body): array
     {
@@ -223,8 +228,10 @@ abstract class HttpAPI
         try {
             return json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            $this->logger->debug('HttpAPI: Parse body response failed, because it\'s not a json.', compact('body'));
-            throw ResponseErrorException::invalidBodyFormat($e);
+            $this->configurator->getLogger()
+                ->debug('Resource: Parse body response failed, because it\'s not a json.', compact('body'));
+
+            throw Exception\Response::invalidBodyFormat($e);
         }
     }
 }

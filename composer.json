@@ -11,9 +11,10 @@
   "require": {
     "php": ">=7.4",
     "ext-json": "*",
+    "amphp/cache": "^1.4",
     "amphp/http-client": "^4.5",
-    "psr/log": "^1.1",
-    "kelunik/retry": "^1.0"
+    "kelunik/retry": "^1.0",
+    "psr/log": "^1.1"
   },
   "require-dev": {
     "symfony/var-dumper": "^5.0",
@@ -22,7 +23,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Spacetab\\JiraSDK\\": "src/"
+      "Spacetab\\SDK\\Jira\\": "src/"
     }
   },
   "config": {

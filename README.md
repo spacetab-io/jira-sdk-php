@@ -15,19 +15,31 @@ composer require spacetab-io/jira-sdk
 
 ```php
 use Amp\Loop;
-use Spacetab\JiraSDK\JiraSDK;
-use Spacetab\JiraSDK\Exception\SdkErrorException;
+use Psr\Log\LogLevel;
+use Spacetab\Logger\Logger;
+use Spacetab\SDK\Jira\Cache;
+use Spacetab\SDK\Jira\Client;
+use Spacetab\SDK\Jira\Configurator;
+use Spacetab\SDK\Jira\Exception;
 
 Loop::run(function () {
-    $jira = JiraSDK::new('https://jira.server.com', 'username', 'jiraTokenStringOrPassword');
+    $logger = Logger::default('Client', LogLevel::DEBUG);
+
+    $configurator = Configurator::fromBasicAuth('https://jira.server.com', 'username', 'jiraTokenStringOrPassword');
+    $configurator->setLogger($logger);
+    $configurator->setCache(Cache::enabled());
+    $configurator->configurate();
+
+    $jira = new Client($configurator);
 
     try {
-        $result = yield $jira->issues()->get('KEY-1');
-    } catch (SdkErrorException $e) {
-        dump($e->getMessage(), $e->getErrorMessages());
+        $issue = yield $jira->issue()->get('KEY-1');
+    } catch (Exception\Main $e) {
+        //$e->getMessage();
+        //$e->getErrorMessages();
     }
 
-    dump($result);
+    dump($issue);
 });
 ```
 
@@ -35,18 +47,21 @@ Loop::run(function () {
 
 ```php
 use Amp\Loop;
-use Spacetab\JiraSDK\JiraSDK;
+use Spacetab\SDK\Jira\Client;
+use Spacetab\SDK\Jira\Configurator;
 
 Loop::run(function () {
-    $jira = JiraSDK::new('https://jira.server.com', 'username', 'jiraTokenStringOrPassword');
+    $configurator = Configurator::fromBasicAuth('https://jira.server.com', 'username', 'jiraTokenStringOrPassword');
+    $configurator->configurate();
 
+    $jira = new Client($configurator);
     $iterator = $jira->search()->query('project = KEY', ['summary'], 20);
 
     $results = [];
     while (yield $iterator->advance()) {
         $results[] = $iterator->getCurrent();
     }
-    
+
     dump($results);
 });
 ```

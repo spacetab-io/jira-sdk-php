@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Spacetab\JiraSDK\API;
+namespace Spacetab\SDK\Jira\Resource;
 
 use Amp\Promise;
 
-class Sprint extends HttpAPI implements SprintInterface
+class Sprint extends Resource
 {
     public function get(int $sprintId): Promise
     {

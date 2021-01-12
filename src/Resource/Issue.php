@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Spacetab\JiraSDK\API;
+namespace Spacetab\SDK\Jira\Resource;
 
 use Amp\Promise;
 
-class Issue extends HttpAPI implements IssueInterface
+class Issue extends Resource
 {
     public function get(string $issueIdOrKey, array $params = []): Promise
     {

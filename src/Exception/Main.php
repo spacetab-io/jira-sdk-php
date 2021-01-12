@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Spacetab\JiraSDK\Exception;
+namespace Spacetab\SDK\Jira\Exception;
 
 use Exception;
 
-class SdkErrorException extends Exception
+class Main extends Exception
 {
     /**
      * @var array<string>

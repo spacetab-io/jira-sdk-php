@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Spacetab\JiraSDK\Exception;
+namespace Spacetab\SDK\Jira\Exception;
 
 use JsonException;
 
-class ResponseErrorException extends SdkErrorException
+final class Response extends Main
 {
     public static function invalidBodyFormat(JsonException $e): self
     {
@@ -25,7 +25,7 @@ class ResponseErrorException extends SdkErrorException
 
     public static function requestFailed(): self
     {
-        return new self('Request failed.');
+        return new self('MakeRequest failed.');
     }
 
     public static function forbidden(): self
@@ -46,5 +46,10 @@ class ResponseErrorException extends SdkErrorException
     public static function serverError(): self
     {
         return new self('Server error.');
+    }
+
+    public static function unknownError(): self
+    {
+        return new self('Unknown error occurred.');
     }
 }

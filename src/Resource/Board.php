@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Spacetab\JiraSDK\API;
+namespace Spacetab\SDK\Jira\Resource;
 
 use Amp\Iterator;
 use Amp\Promise;
 
-class Board extends HttpAPI implements BoardInterface
+class Board extends Resource
 {
     public function all(?string $name = null, ?string $type = null, int $maxResults = 100): Iterator
     {

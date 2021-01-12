@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Spacetab\JiraSDK\API;
+namespace Spacetab\SDK\Jira\Resource;
 
 use Amp\Delayed;
 use Amp\Iterator;
 use Amp\Producer;
 
-class Search extends HttpAPI implements SearchInterface
+class Search extends Resource
 {
     private const VALUES_KEY = 'issues';
     private const WORKLOG_CHUNK_SIZE = 100;

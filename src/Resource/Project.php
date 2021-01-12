@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Spacetab\JiraSDK\API;
+namespace Spacetab\SDK\Jira\Resource;
 
 use Amp\Promise;
 
-class Project extends HttpAPI implements ProjectInterface
+class Project extends Resource
 {
 
     public function all(array $params = []): Promise
